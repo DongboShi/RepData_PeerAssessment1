@@ -1,0 +1,65 @@
+---
+title: "assignment1_db"
+author: "Dongbo Shi"
+date: "5/13/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Peer Assignment 1 of Reproducible Research
+
+## Load data 
+```{r load data, echo=TRUE}
+library(readr)
+activity <- read_csv("/Users/birdstone/Downloads/activity.csv")
+```
+
+## Histogram of the total number of steps taken each day
+```{r total number, echo=TRUE}
+library(dplyr)
+activity_hist <- activity %>% filter(!is.na(steps)) %>% group_by(date) %>%
+        summarise(total_steps=sum(steps))
+hist(activity_hist$total_steps)
+```
+
+## Mean and median number of steps taken each day
+```{r mean, echo = TRUE}
+mean(activity$steps,na.rm = T)
+median(activity$steps,na.rm = T)
+```
+
+## Time series plot of the average number of steps taken
+```{r average plot, echo = TRUE}
+activity_plot <- activity %>% filter(!is.na(steps)) %>% group_by(date) %>%
+        summarise(average_steps=mean(steps))
+plot(activity_plot$date,activity_plot$average_steps,type = "l",xlab = "Date",ylab = "Average Steps")
+```
+
+## The 5-minute interval that, on average, contains the maximum number of steps
+```{r max step, echo=TRUE}
+activity_naomit <- activity %>% filter(!is.na(steps))
+activity_naomit$interval[activity_naomit$steps == max(activity_naomit$steps,na.rm = T)]
+```
+
+## Code to describe and show a strategy for imputing missing data
+## Histogram of the total number of steps taken each day after missing values are imputed
+```{r imputing, echo=TRUE}
+# the imputing strategy is replace the missing data with mean steps
+activity_impute <- activity %>% mutate(steps = if_else(is.na(steps),mean(activity$steps,na.rm = T),steps))
+activity_impt_hist <- activity_impute %>% group_by(date) %>%
+        summarise(total_steps=sum(steps))
+hist(activity_impt_hist$total_steps)
+```
+
+## Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+```{r comparison, echo=TRUE}
+activity_impute <- activity_impute %>% mutate(weekends=if_else(weekdays(activity_impute$date) %in% c("Saturday","Sunday"),"weekend","weekday")) 
+activity_impt_plot <- activity_impute %>% group_by(weekends,interval) %>% summarise(average_steps=mean(steps))
+library(ggplot2)
+p1 <- ggplot(data = activity_impt_plot,aes(x = interval, y = average_steps)) +
+        geom_line() + facet_wrap(~weekends,ncol=1) + ylab("Average Steps")
+p1
+```
